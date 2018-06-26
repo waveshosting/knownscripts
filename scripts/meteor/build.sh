@@ -1,4 +1,3 @@
-echo $BUILD_DIR
 echo "Building meteor app..."
 
 meteor build $BUILD_DIR/compilation --directory --server-only --architecture os.linux.x86_64

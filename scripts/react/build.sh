@@ -1,3 +1,5 @@
+set -e
+
 npm run build
 cd $BUILD_DIR
 git clone https://github.com/waveshosting/static-server build

@@ -5,6 +5,25 @@ echo "Building meteor app..."
 meteor build $BUILD_DIR/compilation --directory --server-only --architecture os.linux.x86_64
 
 echo "fixing meteor npm-rebuild"
+
+echo '
+const fs = require("fs")
+
+console.log(process.env.BUILD_DIR + "/compilation/bundle/programs/server/npm-rebuild.js")
+
+let content = fs
+  .readFileSync(process.env.BUILD_DIR + "/compilation/bundle/programs/server/npm-rebuild.js")
+  .toString()
+
+content = content.replace(
+  "var env = Object.create(process.env, {",
+  "var env = Object.assign(process.env, {"
+)
+
+content = content.replace("PATH: {value: PATH}", "PATH: PATH")
+
+console.log(content)
+' > $BUILD_DIR/replace.js
 node $BUILD_DIR/replace.js
 
 cd $BUILD_DIR/compilation/bundle/programs/server

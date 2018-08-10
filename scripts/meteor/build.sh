@@ -1,12 +1,22 @@
+set -e
+
 echo "Building meteor app..."
 
 meteor build $BUILD_DIR/compilation --directory --server-only --architecture os.linux.x86_64
+
+echo "fixing meteor npm-rebuild"
+node $BUILD_DIR/replace.js
 
 cd $BUILD_DIR/compilation/bundle/programs/server
 meteor npm install --production
 cd $BUILD_DIR/compilation/bundle
 
-export NODE_VERSION=$(node -pe 'JSON.parse(process.argv[1]).nodeVersion' "$(cat star.json)")
+NODE_VERSION=$(node -pe 'JSON.parse(process.argv[1]).nodeVersion' "$(cat star.json)")
+
+if [ "$NODE_VERSION" == "undefined" ]; then
+  NODE_VERSION="4.6.3"
+fi
+
 echo "Node version: $NODE_VERSION"
 
 echo '{

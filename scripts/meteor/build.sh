@@ -9,6 +9,9 @@ sed -i '' 's/PATH: { value: PATH }/PATH: PATH/g' $BUILD_DIR/compilation/bundle/p
 
 cd $BUILD_DIR/compilation/bundle
 
+SETTINGS_FIX="process.env.METEOR_SETTINGS = (process.env.METEOR_SETTINGS || '').replace(/\\\\\\\\\"/g, '\"')"
+echo $SETTINGS_FIX | cat - main.js > temp && mv -f temp main.js
+
 NODE_VERSION=$(node -pe 'JSON.parse(process.argv[1]).nodeVersion' "$(cat star.json)")
 
 if [ "$NODE_VERSION" == "undefined" ]; then

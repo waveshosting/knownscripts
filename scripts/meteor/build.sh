@@ -7,6 +7,9 @@ meteor build $BUILD_DIR/compilation --directory --server-only --architecture os.
 sed -i '' 's/Object\.create/Object\.assign/g' $BUILD_DIR/compilation/bundle/programs/server/npm-rebuild.js
 sed -i '' 's/PATH: { value: PATH }/PATH: PATH/g' $BUILD_DIR/compilation/bundle/programs/server/npm-rebuild.js
 
+cd $BUILD_DIR/compilation/bundle/programs/server
+meteor npm install --production
+
 cd $BUILD_DIR/compilation/bundle
 
 SETTINGS_FIX="process.env.METEOR_SETTINGS = (process.env.METEOR_SETTINGS || '').replace(/\\\\\\\\\"/g, '\"')"

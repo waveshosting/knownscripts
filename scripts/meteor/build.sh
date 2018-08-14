@@ -1,6 +1,6 @@
 set -e
 
-echo "Building meteor app..."
+# echo $BUILD_DIR
 
 meteor build $BUILD_DIR/compilation --directory --server-only --architecture os.linux.x86_64
 
@@ -12,22 +12,29 @@ meteor npm install --production
 
 cd $BUILD_DIR/compilation/bundle
 
+rm -rf $BUILD_DIR/compilation/bundle/programs/server/npm/node_modules/bcrypt
+
 SETTINGS_FIX="process.env.METEOR_SETTINGS = (process.env.METEOR_SETTINGS || '').replace(/\\\\\\\\\"/g, '\"')"
 echo $SETTINGS_FIX | cat - main.js > temp && mv -f temp main.js
 
 NODE_VERSION=$(node -pe 'JSON.parse(process.argv[1]).nodeVersion' "$(cat star.json)")
+NPM_VERSION=$(node -pe 'JSON.parse(process.argv[1]).npmVersion' "$(cat star.json)")
 
 if [ "$NODE_VERSION" == "undefined" ]; then
-  NODE_VERSION="4.6.3"
+  N_V=$(cat .node_version.txt)
+  NODE_VERSION=$(echo $N_V | cut -c 2-)
+  NPM_VERSION="4.6.1"
 fi
 
 echo "Node version: $NODE_VERSION"
+echo "NPM version: $NPM_VERSION"
 
 echo '{
   "name": "waves-meteor-app",
   "version": "0.0.1",
   "scripts": {
-    "start": "node main.js"
+    "preinstall": "cd programs/server && npm install",
+    "start": "bash ./start.sh"
   },
   "dependencies": {
     "fibers": "*",
@@ -37,28 +44,53 @@ echo '{
   }
 }' > package.json
 
+echo '#!/bin/bash
+
+# When nvm is installed, $HOME isnt set
+# resulting in nvm installed /.nvm
+export NVM_DIR="/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+
+nvm use default --delete-prefix --silent
+
+echo "Node version"
+echo $(node --version)
+echo "Npm version"
+echo $(npm --version)
+
+echo "=> Starting App"
+node main.js' > start.sh
+
 mkdir .ebextensions
 
-echo 'option_settings:
-  - namespace: aws:elasticbeanstalk:container:nodejs
-    option_name: NodeVersion
-    value: '$NODE_VERSION'
-' > .ebextensions/npm-version.config
+echo 'files:
+  "/opt/elasticbeanstalk/hooks/appdeploy/pre/45node.sh" :
+    mode: "000775"
+    owner: root
+    group: users
+    content: |
+      #!/bin/bash
+      echo "installing nvm"
+      NODE_VERSION="'$NODE_VERSION'"
+      NPM_VERSION="'$NPM_VERSION'"
+      # Install nvm
+      curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.6/install.sh | bash
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+      nvm install $NODE_VERSION
+      nvm use $NODE_VERSION
+      nvm alias default $NODE_VERSION
+      npm i -g npm@$NPM_VERSION
+' > .ebextensions/node.config
 
 echo 'files:
-  "/opt/elasticbeanstalk/hooks/appdeploy/pre/55npm_install.sh":
-    mode: "000755"
+  "/opt/elasticbeanstalk/hooks/appdeploy/pre/50npm.sh" :
+    mode: "000775"
     owner: root
-    group: root
+    group: users
     content: |
-      #!/usr/bin/env bash
-      # Custom npm install to work with Meteor/s build command
-      export USER=root
-      export HOME=/tmp
-      export NODE_PATH=`ls -td /opt/elasticbeanstalk/node-install/node-* | head -1`/bin
-      echo "------------------------------ — Installing NPM modules for Meteor  — -----------------------------------"
-      OUT=$([ -d "/tmp/deployment/application" ] && cd /tmp/deployment/application/programs/server && $NODE_PATH/npm install --production) || error_exit "Failed to run npm install.  $OUT" $?
-      echo $OUT
-' > .ebextensions/customnpminstall.config
+      #!/bin/bash
+      /opt/elasticbeanstalk/containerfiles/ebnode.py --action npm-install
+' > .ebextensions/node.config
 
 mv $BUILD_DIR/compilation/bundle/ $BUILD_DIR/build/

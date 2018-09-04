@@ -2,20 +2,24 @@ set -e
 
 # echo $BUILD_DIR
 
+sedi () {
+  sed --version >/dev/null 2>&1 && sed -i -- "$@" || sed -i "" "$@"
+}
+
 meteor build $BUILD_DIR/compilation --directory --server-only --architecture os.linux.x86_64
 
-sed -i '' 's/Object\.create/Object\.assign/g' $BUILD_DIR/compilation/bundle/programs/server/npm-rebuild.js
-sed -i '' 's/PATH: { value: PATH }/PATH: PATH/g' $BUILD_DIR/compilation/bundle/programs/server/npm-rebuild.js
+sedi 's/Object\.create/Object\.assign/g' $BUILD_DIR/compilation/bundle/programs/server/npm-rebuild.js
+sedi 's/PATH: { value: PATH }/PATH: PATH/g' $BUILD_DIR/compilation/bundle/programs/server/npm-rebuild.js
 
 cd $BUILD_DIR/compilation/bundle/programs/server
 meteor npm install --production
 
 cd $BUILD_DIR/compilation/bundle
 
-rm -rf $BUILD_DIR/compilation/bundle/programs/server/npm/node_modules/bcrypt
-
 SETTINGS_FIX="process.env.METEOR_SETTINGS = (process.env.METEOR_SETTINGS || '').replace(/\\\\\\\\\"/g, '\"')"
 echo $SETTINGS_FIX | cat - main.js > temp && mv -f temp main.js
+
+rm -rf ./programs/server/npm/node_modules/bcrypt
 
 NODE_VERSION=$(node -pe 'JSON.parse(process.argv[1]).nodeVersion' "$(cat star.json)")
 NPM_VERSION=$(node -pe 'JSON.parse(process.argv[1]).npmVersion' "$(cat star.json)")
@@ -45,20 +49,16 @@ echo '{
 }' > package.json
 
 echo '#!/bin/bash
-
 # When nvm is installed, $HOME isnt set
 # resulting in nvm installed /.nvm
 export NVM_DIR="/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
-
 nvm use default --delete-prefix --silent
-
 echo "Node version"
 echo $(node --version)
 echo "Npm version"
 echo $(npm --version)
-
-echo "=> Starting App"
+echo "=> Starting Orionjs Meteor App"
 node main.js' > start.sh
 
 mkdir .ebextensions
@@ -81,15 +81,13 @@ echo 'files:
       nvm use $NODE_VERSION
       nvm alias default $NODE_VERSION
       npm i -g npm@$NPM_VERSION
-' > .ebextensions/node.config
-
-echo 'files:
   "/opt/elasticbeanstalk/hooks/appdeploy/pre/50npm.sh" :
     mode: "000775"
     owner: root
     group: users
     content: |
       #!/bin/bash
+      echo "Will npm install packages"
       /opt/elasticbeanstalk/containerfiles/ebnode.py --action npm-install
 ' > .ebextensions/node.config
 

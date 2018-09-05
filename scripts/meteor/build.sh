@@ -12,14 +12,14 @@ sedi 's/Object\.create/Object\.assign/g' $BUILD_DIR/compilation/bundle/programs/
 sedi 's/PATH: { value: PATH }/PATH: PATH/g' $BUILD_DIR/compilation/bundle/programs/server/npm-rebuild.js
 
 cd $BUILD_DIR/compilation/bundle/programs/server
-meteor npm install --production
+# meteor npm install --production
 
 cd $BUILD_DIR/compilation/bundle
 
 SETTINGS_FIX="process.env.METEOR_SETTINGS = (process.env.METEOR_SETTINGS || '').replace(/\\\\\\\\\"/g, '\"')"
 echo $SETTINGS_FIX | cat - main.js > temp && mv -f temp main.js
 
-rm -rf ./programs/server/npm/node_modules/bcrypt
+# rm -rf ./programs/server/npm/node_modules/bcrypt
 
 NODE_VERSION=$(node -pe 'JSON.parse(process.argv[1]).nodeVersion' "$(cat star.json)")
 NPM_VERSION=$(node -pe 'JSON.parse(process.argv[1]).npmVersion' "$(cat star.json)")
@@ -37,7 +37,7 @@ echo '{
   "name": "waves-meteor-app",
   "version": "0.0.1",
   "scripts": {
-    "preinstall": "cd programs/server && npm install",
+    "preinstall": "echo \"preinstalling\" && cd programs/server && npm install",
     "start": "bash ./start.sh"
   },
   "dependencies": {
@@ -47,6 +47,8 @@ echo '{
     "underscore": "*"
   }
 }' > package.json
+
+echo 'unsafe-perm=true' > .npmrc
 
 echo '#!/bin/bash
 # When nvm is installed, $HOME isnt set

@@ -18,7 +18,7 @@ cd $BUILD_DIR/compilation/bundle/programs/server
 
 cd $BUILD_DIR/compilation/bundle
 
-SETTINGS_FIX="process.env.METEOR_SETTINGS = (process.env.METEOR_SETTINGS || '').replace(/\\\\\\\\\"/g, '\"')"
+SETTINGS_FIX="process.env.METEOR_SETTINGS = decodeURIComponent(process.env.METEOR_SETTINGS || '');"
 echo $SETTINGS_FIX | cat - main.js > temp && mv -f temp main.js
 
 # rm -rf ./programs/server/npm/node_modules/bcrypt
@@ -62,7 +62,7 @@ echo "Node version"
 echo $(node --version)
 echo "Npm version"
 echo $(npm --version)
-echo "=> Starting Orionjs Meteor App"
+echo "=> Starting Waves Meteor App"
 node main.js' > start.sh
 
 mkdir .ebextensions

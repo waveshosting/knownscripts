@@ -26,7 +26,7 @@ echo $SETTINGS_FIX | cat - main.js > temp && mv -f temp main.js
 NODE_VERSION=$(node -pe 'JSON.parse(process.argv[1]).nodeVersion' "$(cat star.json)")
 NPM_VERSION=$(node -pe 'JSON.parse(process.argv[1]).npmVersion' "$(cat star.json)")
 
-if [ "$NODE_VERSION" == "undefined" ]; then
+if [ "$NODE_VERSION" = "undefined" ]; then
   N_V=$(cat .node_version.txt)
   NODE_VERSION=$(echo $N_V | cut -c 2-)
   NPM_VERSION="4.6.1"
